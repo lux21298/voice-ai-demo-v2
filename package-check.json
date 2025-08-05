@@ -1,0 +1,28 @@
+{
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build", 
+    "start": "next start",
+    "lint": "next lint",
+    "type-check": "tsc --noEmit",
+    "check-deps": "npm ls",
+    "setup-v2": "npm install && npm run type-check",
+    "test-v2": "npm run build && npm run start"
+  },
+  "checkDependencies": {
+    "required": [
+      "@upstash/redis",
+      "framer-motion", 
+      "lucide-react",
+      "recharts",
+      "socket.io",
+      "socket.io-client",
+      "twilio",
+      "date-fns"
+    ],
+    "devDependencies": [
+      "@types/node",
+      "typescript"
+    ]
+  }
+}
