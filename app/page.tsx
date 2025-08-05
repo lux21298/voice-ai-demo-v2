@@ -12,7 +12,7 @@ const VoiceInterface = dynamic(() => import('@/components/VoiceInterface'), {
         <div className="w-32 h-32 rounded-full bg-gray-200 animate-pulse flex items-center justify-center">
           <span className="text-gray-500">Loading...</span>
         </div>
-        <p className="text-gray-500">Đang tải Voice AI V2...</p>
+        <p className="text-gray-500">Loading Voice AI V2...</p>
       </div>
     </div>
   ),
@@ -30,7 +30,7 @@ export default function Home() {
     <main>
       {error && (
         <div className="fixed top-4 right-4 bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded z-50">
-          <strong className="font-bold">Lỗi: </strong>
+          <strong className="font-bold">Error: </strong>
           <span className="block sm:inline">{error}</span>
           <button 
             onClick={() => setError('')}
@@ -42,7 +42,7 @@ export default function Home() {
       )}
       
       <VoiceInterface
-        initialLanguage="vi"
+        initialLanguage="en"
         autoStart={true}
         showPhoneWidget={true}
         showBookingFlow={true}

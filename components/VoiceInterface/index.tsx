@@ -18,7 +18,7 @@ interface VoiceInterfaceProps {
 }
 
 export default function VoiceInterface({
-  initialLanguage = 'vi',
+  initialLanguage = 'en',
   autoStart = false,
   showPhoneWidget = true,
   showBookingFlow = true,
