@@ -4,14 +4,18 @@ import { CacheStrategy, ServiceResponse } from '@/lib/types'
 
 class CacheService {
   private static instance: CacheService
-  private redis: Redis
+  private redis: Redis | null = null
+  private memoryCache = new Map<string, { value: unknown; expiresAt: number | null }>()
+  private memoryTags = new Map<string, Set<string>>()
 
   private constructor() {
     const redisConfig = configService.getRedisConfig()
-    this.redis = new Redis({
-      url: redisConfig.url,
-      token: redisConfig.token
-    })
+    if (redisConfig.url && redisConfig.token) {
+      this.redis = new Redis({
+        url: redisConfig.url,
+        token: redisConfig.token
+      })
+    }
   }
 
   public static getInstance(): CacheService {
@@ -23,6 +27,23 @@ class CacheService {
 
   async set(strategy: CacheStrategy): Promise<ServiceResponse<boolean>> {
     try {
+      if (!this.redis) {
+        this.memoryCache.set(strategy.key, {
+          value: strategy.data,
+          expiresAt: Date.now() + strategy.ttl * 1000
+        })
+
+        if (strategy.tags) {
+          for (const tag of strategy.tags) {
+            const tagKeys = this.memoryTags.get(tag) || new Set<string>()
+            tagKeys.add(strategy.key)
+            this.memoryTags.set(tag, tagKeys)
+          }
+        }
+
+        return { success: true, data: true }
+      }
+
       await this.redis.setex(strategy.key, strategy.ttl, JSON.stringify(strategy.data))
       
       // Set tags for cache invalidation
@@ -48,6 +69,20 @@ class CacheService {
 
   async get<T>(key: string): Promise<ServiceResponse<T | null>> {
     try {
+      if (!this.redis) {
+        const cached = this.memoryCache.get(key)
+        if (!cached) {
+          return { success: true, data: null }
+        }
+
+        if (cached.expiresAt && cached.expiresAt < Date.now()) {
+          this.memoryCache.delete(key)
+          return { success: true, data: null }
+        }
+
+        return { success: true, data: cached.value as T }
+      }
+
       const data = await this.redis.get(key)
       
       if (data === null) {
@@ -70,6 +105,14 @@ class CacheService {
 
   async delete(key: string): Promise<ServiceResponse<boolean>> {
     try {
+      if (!this.redis) {
+        this.memoryCache.delete(key)
+        for (const tagKeys of Array.from(this.memoryTags.values())) {
+          tagKeys.delete(key)
+        }
+        return { success: true, data: true }
+      }
+
       await this.redis.del(key)
       return { success: true, data: true }
     } catch (error) {
@@ -86,6 +129,20 @@ class CacheService {
 
   async invalidateByTag(tag: string): Promise<ServiceResponse<number>> {
     try {
+      if (!this.redis) {
+        const keys = this.memoryTags.get(tag)
+        if (!keys) {
+          return { success: true, data: 0 }
+        }
+
+        for (const key of Array.from(keys)) {
+          this.memoryCache.delete(key)
+        }
+        this.memoryTags.delete(tag)
+
+        return { success: true, data: keys.size }
+      }
+
       const keys = await this.redis.smembers(`tag:${tag}`)
       
       if (keys.length === 0) {
@@ -113,6 +170,18 @@ class CacheService {
 
   async exists(key: string): Promise<boolean> {
     try {
+      if (!this.redis) {
+        const cached = this.memoryCache.get(key)
+        if (!cached) {
+          return false
+        }
+        if (cached.expiresAt && cached.expiresAt < Date.now()) {
+          this.memoryCache.delete(key)
+          return false
+        }
+        return true
+      }
+
       const result = await this.redis.exists(key)
       return result === 1
     } catch (error) {
@@ -122,6 +191,14 @@ class CacheService {
 
   async expire(key: string, seconds: number): Promise<ServiceResponse<boolean>> {
     try {
+      if (!this.redis) {
+        const cached = this.memoryCache.get(key)
+        if (cached) {
+          cached.expiresAt = Date.now() + seconds * 1000
+        }
+        return { success: true, data: Boolean(cached) }
+      }
+
       await this.redis.expire(key, seconds)
       return { success: true, data: true }
     } catch (error) {
@@ -138,6 +215,13 @@ class CacheService {
 
   async increment(key: string, amount: number = 1): Promise<ServiceResponse<number>> {
     try {
+      if (!this.redis) {
+        const cached = await this.get<number>(key)
+        const nextValue = (cached.data || 0) + amount
+        this.memoryCache.set(key, { value: nextValue, expiresAt: null })
+        return { success: true, data: nextValue }
+      }
+
       const result = await this.redis.incrby(key, amount)
       return { success: true, data: result }
     } catch (error) {
@@ -197,6 +281,33 @@ class CacheService {
     const windowStart = now - windowMs
 
     try {
+      if (!this.redis) {
+        const cached = await this.get<number[]>(key)
+        const timestamps = (cached.data || []).filter((timestamp) => timestamp > windowStart)
+
+        if (timestamps.length >= maxRequests) {
+          return {
+            allowed: false,
+            remaining: 0,
+            resetTime: timestamps[0] + windowMs
+          }
+        }
+
+        timestamps.push(now)
+        await this.set({
+          key,
+          ttl: Math.ceil(windowMs / 1000),
+          data: timestamps,
+          tags: ['rate-limits']
+        })
+
+        return {
+          allowed: true,
+          remaining: maxRequests - timestamps.length,
+          resetTime: now + windowMs
+        }
+      }
+
       // Remove expired entries
       await this.redis.zremrangebyscore(key, 0, windowStart)
       
@@ -242,6 +353,13 @@ class CacheService {
     hitRate?: number
   }> {
     try {
+      if (!this.redis) {
+        return {
+          memoryUsage: 'In-memory fallback',
+          keyCount: this.memoryCache.size
+        }
+      }
+
       // Use ping to test connection instead of info()
       const ping = await this.redis.ping()
       if (ping !== 'PONG') {

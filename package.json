@@ -1,12 +1,14 @@
 {
-  "name": "voice-demo-v1",
+  "name": "voice-ai-demo-v2",
   "version": "0.1.0",
   "private": true,
   "scripts": {
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "typecheck": "tsc --noEmit",
+    "test:quick": "node quick-test.js"
   },
   "dependencies": {
     "next": "14.2.5",

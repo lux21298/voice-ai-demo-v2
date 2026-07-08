@@ -7,13 +7,23 @@ import { createHash } from 'crypto'
 
 class VoiceService {
   private static instance: VoiceService
-  private openai: OpenAI
+  private openai: OpenAI | null = null
 
-  private constructor() {
+  private constructor() {}
+
+  private getOpenAIClient(): OpenAI {
     const openaiConfig = configService.getOpenAIConfig()
-    this.openai = new OpenAI({
-      apiKey: openaiConfig.apiKey
-    })
+    if (!openaiConfig.apiKey) {
+      throw new Error('OPENAI_API_KEY is not configured')
+    }
+
+    if (!this.openai) {
+      this.openai = new OpenAI({
+        apiKey: openaiConfig.apiKey
+      })
+    }
+
+    return this.openai
   }
 
   public static getInstance(): VoiceService {
@@ -149,7 +159,8 @@ class VoiceService {
       // Create a File-like object for OpenAI
       const file = new File([buffer], 'audio.wav', { type: 'audio/wav' })
 
-      const transcription = await this.openai.audio.transcriptions.create({
+      const openai = this.getOpenAIClient()
+      const transcription = await openai.audio.transcriptions.create({
         file: file,
         model: 'whisper-1',
         language: 'auto' // Auto-detect language
@@ -201,7 +212,8 @@ class VoiceService {
       }
 
       const openaiConfig = configService.getOpenAIConfig()
-      const completion = await this.openai.chat.completions.create({
+      const openai = this.getOpenAIClient()
+      const completion = await openai.chat.completions.create({
         model: openaiConfig.model,
         messages,
         max_tokens: openaiConfig.maxTokens,
@@ -231,7 +243,8 @@ class VoiceService {
       // Select voice based on language
       const voice = language === 'vi' ? 'nova' : 'alloy' // Nova works well for Vietnamese
 
-      const mp3 = await this.openai.audio.speech.create({
+      const openai = this.getOpenAIClient()
+      const mp3 = await openai.audio.speech.create({
         model: 'tts-1',
         voice: voice,
         input: text
@@ -339,7 +352,8 @@ class VoiceService {
       }
 
       const openaiConfig = configService.getOpenAIConfig()
-      const stream = await this.openai.chat.completions.create({
+      const openai = this.getOpenAIClient()
+      const stream = await openai.chat.completions.create({
         model: openaiConfig.model,
         messages,
         max_tokens: openaiConfig.maxTokens,

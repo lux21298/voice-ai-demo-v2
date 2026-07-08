@@ -1,164 +1,104 @@
-# Voice AI Demo V1 - Bootcamp Assistant
+# Voice AI Demo V2
 
-Ứng dụng Voice AI đơn giản cho phép người dùng hỏi về thông tin bootcamp bằng giọng nói và nhận phản hồi bằng cả text và audio.
+A complete Next.js voice AI demo for bootcamp consultation workflows. It includes a browser voice interface, mock MCP knowledge search, session handling, analytics endpoints, optional Twilio phone flows, and deployment-ready configuration.
 
-## ✨ Tính năng
+## Features
 
-- 🎤 **Ghi âm giọng nói** (tối đa 10 giây)
-- 🔊 **Speech-to-Text** sử dụng OpenAI Whisper
-- 🔍 **Tìm kiếm thông tin** bootcamp qua MCP server
-- 🤖 **AI Response** sử dụng GPT-4o-mini
-- 🗣️ **Text-to-Speech** cho phản hồi
-- 🌐 **Đa ngôn ngữ** - Tiếng Việt và English
+- Browser voice recording UI with multilingual conversation flow
+- OpenAI integration for speech-to-text, chat responses, and text-to-speech
+- Demo mode that still builds and runs without API keys
+- Local mock MCP endpoint for bootcamp knowledge search
+- In-memory cache/session fallback when Upstash Redis is not configured
+- Optional Twilio outbound/inbound phone-call routes
+- Analytics dashboard and API endpoints
+- Production build verified with `next build`
 
-## 🚀 Cài đặt
+## Tech Stack
 
-### 1. Clone và cài đặt dependencies
+- Next.js 14 App Router
+- TypeScript
+- Tailwind CSS
+- OpenAI SDK
+- Upstash Redis, optional
+- Twilio, optional
+- Recharts, Framer Motion, Lucide React
+
+## Getting Started
 
 ```bash
-cd voice-demo-v1
 npm install
-```
-
-### 2. Cấu hình environment variables
-
-Tạo file `.env.local`:
-
-```bash
 cp .env.example .env.local
-```
-
-Cập nhật file `.env.local`:
-
-```env
-OPENAI_API_KEY=your_openai_api_key_here
-MCP_SERVER_URL=http://localhost:3000/api/mcp
-```
-
-### 3. Chạy ứng dụng
-
-```bash
 npm run dev
 ```
 
-Mở [http://localhost:3000](http://localhost:3000) trong browser.
+Open `http://localhost:3000`.
 
-## 📁 Cấu trúc project
+The app can run in local demo mode with an empty `.env.local`. Add real keys when you want live AI, persistent Redis-backed sessions, or phone calls.
 
-```
-voice-demo-v1/
-├── app/
-│   ├── page.tsx              # Main UI
-│   ├── layout.tsx            # Layout
-│   ├── globals.css           # Global styles
-│   └── api/
-│       └── voice/
-│           └── route.ts      # API endpoint
-├── components/
-│   └── VoiceRecorder.tsx     # Voice recording component
-├── lib/
-│   ├── openai.ts            # OpenAI integration
-│   └── mcp-client.ts        # MCP client with mock data
-├── .env.example             # Environment variables template
-└── package.json
+## Environment Variables
+
+Required for real AI features:
+
+```env
+OPENAI_API_KEY=sk-...
 ```
 
-## 🔧 API Keys cần thiết
+Optional production services:
 
-### OpenAI API Key
-1. Đăng ký tại [platform.openai.com](https://platform.openai.com)
-2. Tạo API key
-3. Thêm vào `.env.local`
+```env
+UPSTASH_REDIS_REST_URL=
+UPSTASH_REDIS_REST_TOKEN=
+TWILIO_ACCOUNT_SID=
+TWILIO_AUTH_TOKEN=
+TWILIO_PHONE_NUMBER=
+NEXT_PUBLIC_BASE_URL=http://localhost:3000
+```
 
-### MCP Server (Optional)
-- Nếu không có MCP server, app sẽ sử dụng mock data
-- Mock data bao gồm thông tin cơ bản về học phí, thời gian, chương trình
+See `.env.example` for all supported settings.
 
-## 🎯 Cách sử dụng
+## Scripts
 
-1. **Cho phép microphone access** khi browser hỏi
-2. **Nhấn nút 🎤** để bắt đầu ghi âm
-3. **Nói câu hỏi** trong 10 giây (ví dụ: "Học phí bootcamp bao nhiêu?")
-4. **Đợi xử lý** - app sẽ hiển thị transcript và response
-5. **Nghe phản hồi** qua audio player
+```bash
+npm run dev         # start development server
+npm run build       # production build
+npm run start       # run built app
+npm run lint        # lint with Next.js rules
+npm run typecheck   # TypeScript check
+npm run test:quick  # smoke-test a running server
+```
 
-## 🔍 Ví dụ câu hỏi
+For the smoke test, start the app first:
 
-### Tiếng Việt:
-- "Học phí bootcamp bao nhiêu?"
-- "Thời gian học bao lâu?"
-- "Chương trình học những gì?"
-- "Cơ hội việc làm ở Australia như thế nào?"
+```bash
+npm run dev
+npm run test:quick
+```
 
-### English:
-- "How much is the tuition?"
-- "How long is the program?"
-- "What does the curriculum include?"
-- "What are the job opportunities in Australia?"
+Use another URL if needed:
 
-## 🚨 Troubleshooting
+```bash
+BASE_URL=http://localhost:3001 npm run test:quick
+```
 
-### Lỗi microphone
-- Kiểm tra browser đã cho phép microphone access
-- Refresh page và thử lại
-- Kiểm tra microphone hoạt động với ứng dụng khác
+## Main Routes
 
-### Lỗi OpenAI API
-- Kiểm tra API key đúng format
-- Kiểm tra có credits trong tài khoản
-- Xem console logs để debug
+- `/` - main voice AI interface
+- `/dashboard` - analytics dashboard
+- `/api/voice` - V1 audio upload voice processing
+- `/api/voice/v2` - V2 session-based voice processing
+- `/api/mcp` - local mock MCP knowledge search
+- `/api/analytics` - analytics metrics and export
+- `/api/phone` - optional Twilio call initiation
+- `/api/phone/webhook` - optional Twilio webhook
+- `/api/phone/speech` - optional Twilio speech handler
 
-### Lỗi không có âm thanh
-- Kiểm tra speaker/headphone hoạt động
-- Thử refresh page
-- Kiểm tra browser support audio playback
+## Deployment
 
-## 🔄 Mock Data
+The project is ready for Vercel:
 
-App có sẵn mock data cho demo khi MCP server không available:
+1. Push the repository to GitHub.
+2. Import it in Vercel.
+3. Add environment variables for the production services you want to enable.
+4. Deploy.
 
-- **Học phí**: AUD $15,000, trả góp 3 kỳ (AUD $5,000 mỗi kỳ)
-- **Thời gian**: 16 tuần full-time hoặc 6 tháng part-time (Australia timezone AEST)
-- **Chương trình**: HTML/CSS, JavaScript, React, Node.js, MongoDB
-- **Việc làm**: 85% có việc trong 6 tháng tại Australia, lương AUD $60,000-80,000
-
-## 🚀 Deploy lên Vercel
-
-1. Push code lên GitHub
-2. Connect với Vercel
-3. Add environment variables trong Vercel dashboard
-4. Deploy
-
-**Lưu ý**: MCP server cần accessible từ internet nếu deploy production.
-
-## 📊 Performance
-
-- **Transcription**: ~2-3 giây
-- **AI Response**: ~3-5 giây  
-- **TTS**: ~2-3 giây
-- **Total**: ~10-15 giây cho full flow
-
-## 🛠️ Tech Stack
-
-- **Framework**: Next.js 14 with App Router
-- **Language**: TypeScript
-- **Styling**: Tailwind CSS
-- **Voice Recording**: react-media-recorder
-- **AI Services**: OpenAI (Whisper, GPT-4o-mini, TTS)
-- **Deployment**: Vercel
-
-## 📝 Next Steps (V2)
-
-- [ ] Conversation history
-- [ ] User authentication  
-- [ ] Real-time streaming
-- [ ] Phone integration
-- [ ] Booking functions
-- [ ] Advanced error handling
-- [ ] Caching responses
-
----
-
-**Phiên bản**: V1 - Simple Version  
-**Thời gian phát triển**: 3 ngày  
-**Mức độ**: ⭐⭐☆☆☆ (2/5)
+`OPENAI_API_KEY` is intentionally server-only and is not exposed through `next.config.js`.

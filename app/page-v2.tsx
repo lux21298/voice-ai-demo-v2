@@ -3,7 +3,6 @@
 import { useState } from 'react'
 import dynamic from 'next/dynamic'
 
-// Dynamically import VoiceInterface V2 with no SSR
 const VoiceInterface = dynamic(() => import('@/components/VoiceInterface'), {
   ssr: false,
   loading: () => (
@@ -18,7 +17,7 @@ const VoiceInterface = dynamic(() => import('@/components/VoiceInterface'), {
   ),
 })
 
-export default function Home() {
+export default function HomeV2() {
   const [error, setError] = useState<string>('')
 
   const handleError = (errorMessage: string) => {
@@ -32,15 +31,16 @@ export default function Home() {
         <div className="fixed top-4 right-4 bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded z-50">
           <strong className="font-bold">Lỗi: </strong>
           <span className="block sm:inline">{error}</span>
-          <button 
+          <button
             onClick={() => setError('')}
             className="float-right ml-4 text-red-700 hover:text-red-900"
+            aria-label="Đóng thông báo lỗi"
           >
-            ✕
+            x
           </button>
         </div>
       )}
-      
+
       <VoiceInterface
         initialLanguage="vi"
         autoStart={true}

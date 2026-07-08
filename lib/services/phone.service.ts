@@ -8,11 +8,21 @@ import { PhoneSession, ServiceResponse } from '@/lib/types'
 
 class PhoneService {
   private static instance: PhoneService
-  private twilioClient: twilio.Twilio
+  private twilioClient: twilio.Twilio | null = null
 
-  private constructor() {
+  private constructor() {}
+
+  private getTwilioClient(): twilio.Twilio {
     const twilioConfig = configService.getTwilioConfig()
-    this.twilioClient = twilio(twilioConfig.accountSid, twilioConfig.authToken)
+    if (!twilioConfig.accountSid || !twilioConfig.accountSid.startsWith('AC') || !twilioConfig.authToken) {
+      throw new Error('Twilio credentials are not configured')
+    }
+
+    if (!this.twilioClient) {
+      this.twilioClient = twilio(twilioConfig.accountSid, twilioConfig.authToken)
+    }
+
+    return this.twilioClient
   }
 
   public static getInstance(): PhoneService {
@@ -32,6 +42,7 @@ class PhoneService {
   }): Promise<ServiceResponse<PhoneSession>> {
     try {
       const twilioConfig = configService.getTwilioConfig()
+      const twilioClient = this.getTwilioClient()
       
       // Create phone session
       const phoneSession: PhoneSession = {
@@ -58,7 +69,7 @@ class PhoneService {
       const webhookUrl = `${configService.getAppConfig().baseUrl}/api/phone/webhook?sessionId=${phoneSession.conversationSessionId}`
 
       // Initiate the call
-      const call = await this.twilioClient.calls.create({
+      const call = await twilioClient.calls.create({
         to: formData.phone,
         from: twilioConfig.phoneNumber,
         url: webhookUrl,
